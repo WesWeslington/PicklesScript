@@ -1,36 +1,38 @@
-# Compiler
+# link.exe needs a writable temp dir; make's shell leaves TMP empty (LNK1104).
+export TMP  := .
+export TEMP := .
+
 CXX := clang++
 CXXFLAGS := -std=c++20 -Wall -Wextra -g
-
-# Target
 TARGET := main
 
-# Find all .cpp files recursively
-SRC := $(shell find . -name "*.cpp")
-
-# Object files (mirror structure)
+# Recursive .cpp search (pure-make; avoids shell glob issues on Windows)
+rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+SRC := $(call rwildcard,.,*.cpp)
 OBJ := $(SRC:.cpp=.o)
 
-# Default rule
 all: $(TARGET)
 
-# Link
 $(TARGET): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Compile each .cpp -> .o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean
 clean:
 	rm -f $(OBJ) $(TARGET)
 
-# Rebuild
 re: clean all
 
-# Run
+# Pass extra args positionally: `make run path/to/file`
 run: main
-	./main
+	./main $(RUN_ARGS)
 
-.PHONY: all clean re
+# Treat words after `run` as program args, not targets (phony so no "up to date").
+ifeq ($(firstword $(MAKECMDGOALS)),run)
+RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(eval $(RUN_ARGS):;@:)
+.PHONY: $(RUN_ARGS)
+endif
+
+.PHONY: all clean re run

@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <string_view>
+#include <string>
 
 enum TokenType : uint8_t
 {
@@ -14,6 +14,6 @@ enum TokenType : uint8_t
 struct Token
 {
     int Line;
-    std::string_view Lexeme;
+    std::string Lexeme;
     TokenType TokenType;
 };

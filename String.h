@@ -9,7 +9,7 @@ class String
 {
  public:
     String(std::string Value):Value(Value){}
-    
+    String():Value(""){}
     std::string Value;
 
     operator std::string() const
