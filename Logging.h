@@ -2,6 +2,22 @@
 #include <stdexcept>
 #include <iostream>
 
-#define LOG(message) std::cout << message << '\n'
+inline void Log(const std::string& Message)
+{
+    std::cout << Message << '\n';
+}
 
-#define ERR(...) throw std::runtime_error(STRINGF(__VA_ARGS__).Value)
+inline void Err(std::string Message)
+{
+    throw std::runtime_error(Message.data());
+}
+
+#define Logf(Message, ...)\
+{\
+    std::cout << std::format(Message, __VA_ARGS__) << '\n';\
+}
+
+#define Errf(Message, ...)\
+{\
+    throw std::runtime_error(std::format(Message, __VA_ARGS__));     \
+}

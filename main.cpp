@@ -8,7 +8,7 @@ String LoadFile(const std::string &Path)
     std::ifstream File(Path);
     if (!File)
     {
-        ERR("Failed to open file at path {}", Path);
+        Errf("Failed to open file at path {}", Path);
     }
 
     return std::string(
@@ -19,7 +19,8 @@ String LoadFile(const std::string &Path)
 
 void Run(String Source)
 {
-    LOG(Source);
+    Scanner CurScanner;
+    CurScanner.ScanTokens(Source);
 }
 
 void RunREPL()
@@ -42,18 +43,19 @@ void RunFile(String SourcePath)
 
 int main(int count, char* args[])
 {
-    LOG(STRING("Hi"));
+    Log(String("Hi"));
     if (count == 1)
     {
 	RunREPL();
     }
     else if (count == 2)
     {
-	RunFile(STRING(args[1]));
+	RunFile(String(args[1]));
     }
     else
     {
 
     }
+    
     return 0;
 }

@@ -2,15 +2,15 @@
 #include <string>
 
 
-#define STRING(message) String(message)
-#define STRINGF(message, ...) String(std::format(message, __VA_ARGS__))
-
 class String
 {
  public:
-    String(std::string Value):Value(Value){}
+    std::string Value = "";
+
+    String(const std::string& NewString):Value(NewString){}
     String():Value(""){}
-    std::string Value;
+    String(const String& rhs):Value(rhs.Value){}
+    String& operator=(const String& rhs);
 
     operator std::string() const
     {
