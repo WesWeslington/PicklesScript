@@ -1,5 +1,6 @@
-#include "Scanner.h"
+#include "Compiler.h"
 #include "Logging.h"
+
 #include <fstream>
 #include <iostream>
 
@@ -20,16 +21,18 @@ String LoadFile(const std::string &Path)
 void Run(String Source)
 {
     Scanner CurScanner;
-    CurScanner.ScanTokens(Source);
+    std::vector<Token> Tokens = CurScanner.ScanTokens(Source.Value + '\0');
+    Compiler CurCompiler(Tokens);
+    CurCompiler.Execute();
 }
 
 void RunREPL()
 {
     for (;;)
     {
-	std::string REPLLine;
+	String REPLLine;
         std::cout << ">";
-	std::getline(std::cin, REPLLine);
+	std::getline(std::cin, REPLLine.Value);
 	Run(REPLLine);
     }
 }
@@ -44,6 +47,7 @@ void RunFile(String SourcePath)
 int main(int count, char* args[])
 {
     Log(String("Hi"));
+   
     if (count == 1)
     {
 	RunREPL();
@@ -56,6 +60,8 @@ int main(int count, char* args[])
     {
 
     }
+
+    
     
     return 0;
 }

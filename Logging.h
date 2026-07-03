@@ -1,4 +1,3 @@
-#include "String.h"
 #include <stdexcept>
 #include <iostream>
 
@@ -7,7 +6,7 @@ inline void Log(const std::string& Message)
     std::cout << Message << '\n';
 }
 
-inline void Err(std::string Message)
+inline std::runtime_error Err(std::string Message)
 {
     throw std::runtime_error(Message.data());
 }
@@ -19,5 +18,5 @@ inline void Err(std::string Message)
 
 #define Errf(Message, ...)\
 {\
-    throw std::runtime_error(std::format(Message, __VA_ARGS__));     \
+    throw Err(std::format(Message, __VA_ARGS__));       \
 }

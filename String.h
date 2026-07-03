@@ -10,7 +10,6 @@ class String
     String(const std::string& NewString):Value(NewString){}
     String():Value(""){}
     String(const String& rhs):Value(rhs.Value){}
-    String& operator=(const String& rhs);
 
     operator std::string() const
     {
@@ -20,5 +19,10 @@ class String
     operator const char*() const
     {
         return Value.data();
+    }
+
+    constexpr std::string operator = (const String& a)
+    {
+        return a.Value;
     }
 };

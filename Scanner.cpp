@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include <map>
 
+
 std::map<std::string, TokenType> KeywordMap
 {
     {"if", IF},
@@ -9,7 +10,7 @@ std::map<std::string, TokenType> KeywordMap
     {"class", CLASS},
     {"for", FOR},
     {"while", WHILE},
-    {"print", PRINT},
+    {"print", _PRINT},
     {"true", TRUE},
     {"false", FALSE},
     {"or", OR},
@@ -47,7 +48,8 @@ char Scanner::PeekNext()
 
 const char& Scanner::Advance()
 {
-    ++Current;
+    CharBuffer += Peek();
+    Current++;
     return Current[-1];
 }
 
@@ -84,11 +86,21 @@ Token Scanner::MakeToken(TokenType TokenType)
     return Token(Line, CharBuffer, TokenType);
 }
 
+bool Scanner::Match(char Expected)
+{
+    if(Expected == Peek())
+    {
+        Advance();
+        return true;
+    }
+
+    return false;
+}
+
 Token Scanner::Number()
 {
     while(IsDigit(Peek()))
     {
-        CharBuffer += Peek();
         Advance();
     }
 
@@ -100,7 +112,6 @@ Token Scanner::Identifier()
 {
     while(IsAlpha(Peek()) || IsDigit(Peek()))
     {
-        CharBuffer += Peek();
         Advance();
     }
 
@@ -116,7 +127,7 @@ Token Scanner::Identifier()
 Token Scanner::String()
 {
     Advance();
-    while(Peek() != '\"')
+    while(Peek() != '"')
     {
         // TODO: Add compile errors for this when we have compile errors
         if(Peek() == '\0')
@@ -124,9 +135,10 @@ Token Scanner::String()
             return MakeToken(STRING);
         }
 
-        CharBuffer += Peek();
         Advance();
     }
+
+    Current++;
 
     Logf("STRING FOUND {}", CharBuffer);
     return MakeToken(STRING);
@@ -134,8 +146,31 @@ Token Scanner::String()
 
 Token Scanner::ScanToken()
 {
-    SkipWhitespace();
     const char& Char = *Current;
+
+    switch(Char)
+    {
+    case '<': Advance(); return Match('=') ?
+                             MakeToken(GREATER_EQUAL) : MakeToken(GREATER);
+    case '>': Advance(); return Match('=') ?
+                             MakeToken(LESS_EQUAL) : MakeToken(LESS);
+    case '!': Advance(); return Match('=') ?
+                             MakeToken(BANG_EQUAL) :MakeToken(BANG);
+    case '=': Advance(); return Match('=') ?
+                             MakeToken(EQUAL_EQUAL) : MakeToken(EQUAL);
+        case ';' : Advance(); return MakeToken(SEMICOLON);
+        case '+' : Advance(); return MakeToken(PLUS);
+        case '-' : Advance(); return MakeToken(MINUS);
+        case '*' : Advance(); return MakeToken(STAR);
+        case '/' : Advance(); return MakeToken(SLASH);
+        case '(' : Advance(); return MakeToken(LEFT_PAREN);
+        case ')' : Advance();  return MakeToken(RIGHT_PAREN);
+        case '{' : Advance(); return MakeToken(LEFT_BRACE);
+        case '}' : Advance(); return MakeToken(RIGHT_BRACE);
+        case '"' : Current++; return String();
+
+        default: break;
+    }
 
     if(IsDigit(Char))
     {
@@ -148,31 +183,7 @@ Token Scanner::ScanToken()
     {
         return Identifier();
     }
-
-    switch(Char)
-    {
-        case '<': return PeekNext() == '=' ?
-                MakeToken(GREATER_EQUAL) : MakeToken(GREATER);
-        case '>': return PeekNext() == '=' ?
-            MakeToken(LESS_EQUAL) : MakeToken(LESS);
-        case '!': return PeekNext() == '=' ?
-            MakeToken(BANG_EQUAL) :MakeToken(BANG);
-        case '=': return PeekNext() == '=' ?
-            MakeToken(EQUAL_EQUAL) : MakeToken(EQUAL);
-        case ';' : return MakeToken(SEMICOLON);
-        case '+' : return MakeToken(PLUS);
-        case '-' : return MakeToken(MINUS);
-        case '*' : return MakeToken(STAR);
-        case '/' : return MakeToken(SLASH);
-        case '(' : return MakeToken(LEFT_PAREN);
-        case ')' : return MakeToken(RIGHT_PAREN);
-        case '{' : return MakeToken(LEFT_BRACE);
-        case '}' : return MakeToken(RIGHT_BRACE);
-        case '\"': return String();
-
-        default: break;
-    }
-
+    
     return MakeToken(ENDOFFILE);
 }
 
@@ -180,15 +191,20 @@ std::vector<Token> Scanner::ScanTokens(std::string Source)
 {
     Current = &Source[0];
     std::vector<Token> Tokens;
-    for(;;)
+    while(Current && *Current != '\0')
     {
-        CharBuffer = {};
         Comment();
-        if(Current && *Current == '\0') { break; }
-        
-        Tokens.push_back(ScanToken());
-        Advance();
+        SkipWhitespace();
+
+        CharBuffer = "";
+        Token NewToken = ScanToken();
+        Tokens.push_back(NewToken);
+
+        Previous = *Current;
     }
+
+    Tokens.push_back(MakeToken(ENDOFFILE));
+    Log("Reached end");
     
     return Tokens;
 }

@@ -12,10 +12,12 @@ class Scanner
 
  private:
     char& Peek();
+    char Previous;
     char PeekNext();
     const char& Advance();
     void SkipWhitespace();
     void Comment();
+    bool Match(char Type);
 
     Token Number();
     Token String();
