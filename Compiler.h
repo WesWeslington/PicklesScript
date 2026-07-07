@@ -7,13 +7,16 @@
 #include <iostream>
 #include <vector>
 
+enum CompileResult
+{
+    ERR, SUCCESS
+};
+
 enum ExpressionType
 {
     UNSET, BINARY, UNARY,
 };
 
-class BytecodeEmitter;
-class AstPrinter;
 class Expr
 {
 public:
@@ -24,12 +27,12 @@ public:
 class Binary : public Expr
 {
 public:
-    Binary(Expr A, Token O, Expr B);
-    /* : */
-    /*     LHS(A), */
-    /*     Operator(O), */
-    /*         RHS(B){Logf("A {} B", O.Lexeme);} */
-        //{}
+    Binary(Expr A, Token O, Expr B):
+        LHS(A),
+        Operator(O),
+        RHS(B)
+    {}
+        
     
     Expr LHS;
     Token Operator;
@@ -37,7 +40,6 @@ public:
 
 protected:
     virtual ExpressionType Type(){return BINARY;}
-    //virtual void Visit() override;
 };
 
 class Unary : public Expr
@@ -76,6 +78,10 @@ public:
     std::any Value;
 };
 
+
+class BytecodeEmitter;
+class AstPrinter;
+
 class Compiler
 {
 
@@ -85,8 +91,8 @@ public:
     {}
     
     std::vector<Token> Tokens;
-    
-    Program Compile();
+    Program _Program;
+    CompileResult Compile();
     
     void Execute();
     
@@ -97,6 +103,7 @@ public:
     const Token Peek();
     bool Match(const TokenType A);
 
+    void DumpBytecode();
     int Current = 0;
     
 private:
@@ -108,5 +115,10 @@ private:
     Expr ExprFactor();
     Expr ExprUnary();
     Expr ExprLiteral();
+
+private:
     
+    void PrintStatement();
+    void EvaluateExpressions();
+    void ExpressionStatement();
 };

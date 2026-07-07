@@ -21,6 +21,7 @@ class String
         return Value.data();
     }
 
+
     constexpr std::string operator = (const String& a)
     {
         return a.Value;

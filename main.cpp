@@ -23,7 +23,7 @@ void Run(String Source)
     Scanner CurScanner;
     std::vector<Token> Tokens = CurScanner.ScanTokens(Source.Value + '\0');
     Compiler CurCompiler(Tokens);
-    CurCompiler.Execute();
+    CurCompiler.Compile();
 }
 
 void RunREPL()

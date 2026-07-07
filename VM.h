@@ -1,9 +1,12 @@
 #include <vector>
 
-enum OpCode 
+enum class OpCode 
 {
     LOADCONSTANT,
     ADD,   // Add a, b, c (a = b + c)
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
     PRINT, // Print a 
     HALT   // Halt the VM Program
     
@@ -12,18 +15,18 @@ enum OpCode
 struct Instruction
 {
     OpCode Op;
-    int R0,R1,R2;
-    int Immediate;
+    std::vector<int> Registers = {};
 };
 
 class Program
 {
 
 private:
-    std::vector<Instruction> Instructions;
     std::vector<int> Constants;
     
 public:
+    std::vector<Instruction> Instructions;
+
     void PushInstruction(Instruction CodeInstruction)
     {
         Instructions.push_back(CodeInstruction);
@@ -44,6 +47,8 @@ public:
     {
         return Constants[ConstantIndex];
     }
+
+    void PrintInstruction(const Instruction& Instruct);
 };
 
 class VM

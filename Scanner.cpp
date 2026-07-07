@@ -5,18 +5,18 @@
 
 std::map<std::string, TokenType> KeywordMap
 {
-    {"if", IF},
-    {"var", VAR},
-    {"class", CLASS},
-    {"for", FOR},
-    {"while", WHILE},
-    {"print", _PRINT},
-    {"true", TRUE},
-    {"false", FALSE},
-    {"or", OR},
-    {"and", AND},
-    {"fun", FUN},
-    {"naww", NAWW},
+    {"if", TokenType::IF},
+    {"var", TokenType::VAR},
+    {"class", TokenType::CLASS},
+    {"for", TokenType::FOR},
+    {"while", TokenType::WHILE},
+    {"print", TokenType::PRINT},
+    {"true", TokenType::TRUE},
+    {"false", TokenType::FALSE},
+    {"or", TokenType::OR},
+    {"and", TokenType::AND},
+    {"fun", TokenType::FUN},
+    {"naww", TokenType::NAWW},
 
 };
 
@@ -105,7 +105,7 @@ Token Scanner::Number()
     }
 
     Logf("NUMBER FOUND {}", CharBuffer);
-    return MakeToken(NUMBER); 
+    return MakeToken(TokenType::NUMBER); 
 }
 
 Token Scanner::Identifier()
@@ -121,7 +121,7 @@ Token Scanner::Identifier()
         return MakeToken(KeywordMap[CharBuffer]);
     }
     Logf("IDENTIFIER FOUND {}", CharBuffer);
-    return MakeToken(IDENTIFIER);
+    return MakeToken(TokenType::IDENTIFIER);
 }
 
 Token Scanner::String()
@@ -132,7 +132,7 @@ Token Scanner::String()
         // TODO: Add compile errors for this when we have compile errors
         if(Peek() == '\0')
         {
-            return MakeToken(STRING);
+            return MakeToken(TokenType::STRING);
         }
 
         Advance();
@@ -141,7 +141,7 @@ Token Scanner::String()
     Current++;
 
     Logf("STRING FOUND {}", CharBuffer);
-    return MakeToken(STRING);
+    return MakeToken(TokenType::STRING);
 }
 
 Token Scanner::ScanToken()
@@ -151,22 +151,22 @@ Token Scanner::ScanToken()
     switch(Char)
     {
     case '<': Advance(); return Match('=') ?
-                             MakeToken(GREATER_EQUAL) : MakeToken(GREATER);
+                             MakeToken(TokenType::GREATER_EQUAL) : MakeToken(TokenType::GREATER);
     case '>': Advance(); return Match('=') ?
-                             MakeToken(LESS_EQUAL) : MakeToken(LESS);
+                             MakeToken(TokenType::LESS_EQUAL) : MakeToken(TokenType::LESS);
     case '!': Advance(); return Match('=') ?
-                             MakeToken(BANG_EQUAL) :MakeToken(BANG);
+                             MakeToken(TokenType::BANG_EQUAL) :MakeToken(TokenType::BANG);
     case '=': Advance(); return Match('=') ?
-                             MakeToken(EQUAL_EQUAL) : MakeToken(EQUAL);
-        case ';' : Advance(); return MakeToken(SEMICOLON);
-        case '+' : Advance(); return MakeToken(PLUS);
-        case '-' : Advance(); return MakeToken(MINUS);
-        case '*' : Advance(); return MakeToken(STAR);
-        case '/' : Advance(); return MakeToken(SLASH);
-        case '(' : Advance(); return MakeToken(LEFT_PAREN);
-        case ')' : Advance();  return MakeToken(RIGHT_PAREN);
-        case '{' : Advance(); return MakeToken(LEFT_BRACE);
-        case '}' : Advance(); return MakeToken(RIGHT_BRACE);
+                             MakeToken(TokenType::EQUAL_EQUAL) : MakeToken(TokenType::EQUAL);
+        case ';' : Advance(); return MakeToken(TokenType::SEMICOLON);
+        case '+' : Advance(); return MakeToken(TokenType::PLUS);
+        case '-' : Advance(); return MakeToken(TokenType::MINUS);
+        case '*' : Advance(); return MakeToken(TokenType::STAR);
+        case '/' : Advance(); return MakeToken(TokenType::SLASH);
+        case '(' : Advance(); return MakeToken(TokenType::LEFT_PAREN);
+        case ')' : Advance();  return MakeToken(TokenType::RIGHT_PAREN);
+        case '{' : Advance(); return MakeToken(TokenType::LEFT_BRACE);
+        case '}' : Advance(); return MakeToken(TokenType::RIGHT_BRACE);
         case '"' : Current++; return String();
 
         default: break;
@@ -184,7 +184,7 @@ Token Scanner::ScanToken()
         return Identifier();
     }
     
-    return MakeToken(ENDOFFILE);
+    return MakeToken(TokenType::ENDOFFILE);
 }
 
 std::vector<Token> Scanner::ScanTokens(std::string Source)
@@ -203,7 +203,7 @@ std::vector<Token> Scanner::ScanTokens(std::string Source)
         Previous = *Current;
     }
 
-    Tokens.push_back(MakeToken(ENDOFFILE));
+    Tokens.push_back(MakeToken(TokenType::ENDOFFILE));
     Log("Reached end");
     
     return Tokens;

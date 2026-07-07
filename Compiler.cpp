@@ -6,14 +6,7 @@ VM CurVM;
 /*
   *    Expression
    */
-
-Binary::Binary(Expr A, Token O, Expr B):
-    LHS(A),
-    Operator(O),
-    RHS(B)
-{
-    Logf("A {} B", O.Lexeme);
-}
+int ConstantIndex = 0;
 
 Expr Compiler::ExprExpression()
 {
@@ -23,7 +16,7 @@ Expr Compiler::ExprExpression()
 Expr Compiler::ExprEquality()
 {
     Expr _Expr = ExprComparison();
-    while(Match(BANG_EQUAL) || Match(EQUAL_EQUAL))
+    while(Match(TokenType::BANG_EQUAL) || Match(TokenType::EQUAL_EQUAL))
     {
         Token Operator = Previous();
         Expr Right = ExprComparison();
@@ -36,11 +29,26 @@ Expr Compiler::ExprComparison()
 {
     Expr _Expr = ExprTerm();
 
-    while(Match(GREATER) || Match(GREATER_EQUAL) ||
-          Match(LESS) || Match(LESS_EQUAL) )
+    while(Match(TokenType::GREATER) || Match(TokenType::GREATER_EQUAL) ||
+          Match(TokenType::LESS) || Match(TokenType::LESS_EQUAL) )
     {
         Token Operator = Previous();
         Expr Right = ExprTerm();
+
+        switch(Operator.Type)
+        {
+        case TokenType::GREATER:
+            break;
+        case TokenType::LESS:
+            break;
+        case TokenType::GREATER_EQUAL:
+            break;
+        case TokenType::LESS_EQUAL:
+            break;
+        default:
+            Err("Expected GREATER / LESS / GREATER_EQUAL / LESS_EQUAL in ExprComparison");
+            break;
+        }
         return Binary{Right, Operator, _Expr};
     }
     
@@ -51,10 +59,24 @@ Expr Compiler::ExprTerm()
 {
     Expr _Expr = ExprFactor();
 
-    while(Match(PLUS) || Match(MINUS))
+    while(Match(TokenType::PLUS) || Match(TokenType::MINUS))
     {
         Token Operator = Previous();
         Expr Right = ExprFactor();
+        switch(Operator.Type)
+        {
+        case TokenType::PLUS:
+            _Program.PushInstruction({OpCode::ADD, {2, 0, 1}});
+            break;
+        case TokenType::MINUS:
+            _Program.PushInstruction({OpCode::SUBTRACT, {2, 0, 1}});
+            break;
+        default:
+            Log("Default operator type hit. nothin gona happen cuh");
+            break;
+        }
+
+        ConstantIndex = 0;
         return Binary{Right, Operator, _Expr};
     }
 
@@ -65,19 +87,33 @@ Expr Compiler::ExprFactor()
 {
     Expr _Expr = ExprUnary();
 
-    while(Match(STAR) || Match(SLASH))
+    while(Match(TokenType::STAR) || Match(TokenType::SLASH))
     {
         Token Operator = Previous();
         Expr Right = ExprUnary();
+
+        switch(Operator.Type)
+        {
+        case TokenType::STAR:
+            _Program.PushInstruction({OpCode::MULTIPLY, {2, 0, 1}});
+            break;
+        case TokenType::SLASH:
+            _Program.PushInstruction({OpCode::DIVIDE, {2, 0, 1}});
+            break;
+        default:
+            Log("Expected STAR / SLASH in ExprFactor");
+            break;
+        }
+
         return Binary{Right, Operator, _Expr};
     }
-        
+
     return _Expr;
 }
 
 Expr Compiler::ExprUnary()
 {
-    if(Match(MINUS) || Match(BANG))
+    if(Match(TokenType::MINUS) || Match(TokenType::BANG))
     {
         Token Operator = Previous();
         Expr Right = ExprLiteral();
@@ -89,32 +125,34 @@ Expr Compiler::ExprUnary()
 
 Expr Compiler::ExprLiteral()
 {
-    if(Match(FALSE)){ Log("False"); return Literal{false}; }
-    if(Match(TRUE)) { Log("True");  return Literal{true};  }
-    if(Match(NAWW)) { Log("Naww");  return Literal{NULL};  }
+    if(Match(TokenType::FALSE)){ Log("False"); return Literal{false}; }
+    if(Match(TokenType::TRUE)) { Log("True");  return Literal{true};  }
+    if(Match(TokenType::NAWW)) { Log("Naww");  return Literal{NULL};  }
 
-    if(Match(NUMBER))
+    if(Match(TokenType::NUMBER))
     {
         int Num = std::stoi(Previous().Lexeme);
+        _Program.PushInstruction({OpCode::LOADCONSTANT, {ConstantIndex, _Program.PushConstant(Num)}});
+        ConstantIndex++;
         return Literal{Num};
     }
 
-    if(Match(STRING))
+    if(Match(TokenType::STRING))
     {
         String LitString = Previous().Lexeme;
         return Literal{LitString};
     }
 
-    if(Match(LEFT_PAREN))
+    if(Match(TokenType::LEFT_PAREN))
     {
         Log("Before");
         Expr _Expr = ExprExpression();
         Log("After");
-        Consume(RIGHT_PAREN, String("Expected ')' at the end of a grouping"));
+        Consume(TokenType::RIGHT_PAREN, String("Expected ')' at the end of a grouping"));
         return Grouping{_Expr};
     }
 
-    if(Match(ENDOFFILE))
+    if(Match(TokenType::ENDOFFILE))
     {
         return Literal{NULL};
     }
@@ -124,7 +162,7 @@ Expr Compiler::ExprLiteral()
 
 bool Compiler::AtEndOfFile()
 {
-    return Peek().Type == ENDOFFILE;
+    return Peek().Type == TokenType::ENDOFFILE;
 }
 
 Token Compiler::Previous()
@@ -141,40 +179,63 @@ Token Compiler::Advance()
 /*
   *    Program
    */
-
-Program Compiler::Compile()
+void PrintInstruction(const Instruction& Instruct)
 {
-    Program NewProgram;
-
-    Expr _Expr = ExprExpression();
-    // int RegisterIndex = 0;
-    // int FirstConstantRegIndex = RegisterIndex;
-    // NewProgram.PushInstruction({LOADCONSTANT, FirstConstantRegIndex, NewProgram.PushConstant(1)});
-
-    // RegisterIndex++;
-
-    // int SecondConstantRegIndex = RegisterIndex;
-
-    // NewProgram.PushInstruction({LOADCONSTANT, SecondConstantRegIndex, NewProgram.PushConstant(2)});
-
-    // RegisterIndex++;
-    // int AddRegStoreIndex = RegisterIndex;
+    std::string OpcodeString;
+    switch(Instruct.Op)
+    {
+    case OpCode::ADD:
+        OpcodeString = "OP_ADD";
+        break;
+    case OpCode::LOADCONSTANT:
+        OpcodeString = "OP_LOADCONSTANT";
+        break;
+    case OpCode::PRINT:
+        OpcodeString = "OP_PRINT";
+        break;
+    case OpCode::HALT:
+        OpcodeString = "OP_HALT";
+        break;
+    default:
+        OpcodeString = "OP_UNSET";
+        break;
+    }
     
-    // NewProgram.PushInstruction({ADD, AddRegStoreIndex,
-    //         FirstConstantRegIndex, SecondConstantRegIndex});
+    Logf("Op: {}", OpcodeString);
 
-    // NewProgram.PushInstruction({PRINT, AddRegStoreIndex});
+    // TODO: Print values instead of register locations
+    for(size_t Index = 0; Index < Instruct.Registers.size(); Index++)
+    {
+        Logf("R{}: {}", Index, Instruct.Registers[Index]);
+    }
+}
 
-    // NewProgram.PushInstruction({HALT});
+void Compiler::DumpBytecode()
+{
+    for(const auto& Instruct : _Program.Instructions)
+    {
+        PrintInstruction(Instruct);
+    }
+}
 
-    return NewProgram;
+CompileResult Compiler::Compile()
+{
+    _Program = Program();
+    EvaluateExpressions();
+    _Program.PushInstruction({OpCode::HALT});
+    Log("Expression complete");
+    DumpBytecode();
+    Execute();
+    
+    return SUCCESS;
 }
 
 void Compiler::Execute()
 {
-    Program _Program = Compile();
-    // CurVM.Load(_Program);
-    // CurVM.Run();
+    CurVM.Load(_Program);
+    Log("Program loaded");
+    CurVM.Run();
+    Log("Program ran");
 }
 
 const Token Compiler::Consume(TokenType TokenA, String Message)
@@ -203,3 +264,26 @@ bool Compiler::Match(const TokenType TokenA)
     return false;
 }
 
+/*
+  *    Statements
+   */
+
+void Compiler::EvaluateExpressions()
+{
+    if(Match(TokenType::PRINT)){ PrintStatement(); return; }
+
+    ExpressionStatement();
+}
+
+void Compiler::PrintStatement()
+{
+    Expr Expression(ExprExpression());
+    Consume(TokenType::SEMICOLON, String("Expect semicolon after 'print'"));
+    _Program.PushInstruction({OpCode::PRINT, {2}});
+}
+
+void Compiler::ExpressionStatement()
+{
+    Expr Expression = ExprExpression();
+    Consume(TokenType::SEMICOLON, String("Expect semicolon after expression."));
+};
