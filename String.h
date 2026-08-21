@@ -1,6 +1,7 @@
 #include <format>
 #include <string>
 
+#pragma once
 
 class String
 {

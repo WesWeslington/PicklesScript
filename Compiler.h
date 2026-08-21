@@ -104,9 +104,9 @@ public:
     bool Match(const TokenType A);
 
     void DumpBytecode();
-    int Current = 0;
     
 private:
+    int Current = 0;
 
     Expr ExprExpression();
     Expr ExprEquality();

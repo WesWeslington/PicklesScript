@@ -6,8 +6,6 @@ VM CurVM;
 /*
   *    Expression
    */
-int ConstantIndex = 0;
-
 Expr Compiler::ExprExpression()
 {
     return ExprEquality();
@@ -76,7 +74,6 @@ Expr Compiler::ExprTerm()
             break;
         }
 
-        ConstantIndex = 0;
         return Binary{Right, Operator, _Expr};
     }
 
@@ -125,21 +122,47 @@ Expr Compiler::ExprUnary()
 
 Expr Compiler::ExprLiteral()
 {
-    if(Match(TokenType::FALSE)){ Log("False"); return Literal{false}; }
-    if(Match(TokenType::TRUE)) { Log("True");  return Literal{true};  }
+    if(Match(TokenType::FALSE))
+    {
+        int PushedConstantIndex = _Program.PushConstant(std::make_unique<BoolValue>(BoolValue{false}));
+        _Program.PushInstruction({
+                OpCode::LOADCONSTANT,
+                {PushedConstantIndex
+                }
+            });
+        return Literal{false};
+    }
+    if(Match(TokenType::TRUE))
+    {
+        int PushedConstantIndex = _Program.PushConstant(std::make_unique<BoolValue>(BoolValue{true}));
+        _Program.PushInstruction({
+                OpCode::LOADCONSTANT,
+                {PushedConstantIndex
+                }
+            });
+        return Literal{true};
+    }
     if(Match(TokenType::NAWW)) { Log("Naww");  return Literal{NULL};  }
 
     if(Match(TokenType::NUMBER))
     {
-        int Num = std::stoi(Previous().Lexeme);
-        _Program.PushInstruction({OpCode::LOADCONSTANT, {ConstantIndex, _Program.PushConstant(Num)}});
-        ConstantIndex++;
+        IntValue Num = IntValue{std::stoi(Previous().Lexeme)};
+        int PushedConstantIndex = _Program.PushConstant(std::make_unique<IntValue>(Num));
+        _Program.PushInstruction({
+                OpCode::LOADCONSTANT,
+                {PushedConstantIndex
+                }
+            });
         return Literal{Num};
     }
 
     if(Match(TokenType::STRING))
     {
-        String LitString = Previous().Lexeme;
+        StringValue LitString = StringValue{Previous().Lexeme};
+        _Program.PushInstruction({OpCode::LOADCONSTANT, {
+                    _Program.PushConstant(
+                         std::make_unique<StringValue>(LitString))}
+            });
         return Literal{LitString};
     }
 
@@ -220,8 +243,11 @@ void Compiler::DumpBytecode()
 
 CompileResult Compiler::Compile()
 {
-    _Program = Program();
-    EvaluateExpressions();
+    _Program = Program{};
+    while(!Match(TokenType::ENDOFFILE))
+    {
+        EvaluateExpressions();
+    }
     _Program.PushInstruction({OpCode::HALT});
     Log("Expression complete");
     DumpBytecode();
